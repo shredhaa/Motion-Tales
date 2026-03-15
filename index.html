@@ -13,15 +13,20 @@
 :root {
   --bg: #e0ff00;
   --black: #0a0a0a;
+  --accent: #ff6600;
+  --purple: #e052ff;
+  --green: #00c800;
 }
 
 * { margin:0; padding:0; box-sizing:border-box; }
 
 body {
-  background:black;
+  background: var(--black);
   color:white;
   font-family:'IM Fell English', serif;
   overflow:hidden;
+  height:100vh;
+  width:100vw;
   cursor:none;
 }
 
@@ -36,6 +41,19 @@ body {
   pointer-events:none;
   z-index:9999;
   transform:translate(-50%,-50%);
+  mix-blend-mode:difference;
+}
+
+/* top bar */
+
+#topbar{
+  position:fixed;
+  top:0;
+  width:100%;
+  padding:18px 24px 0;
+  display:flex;
+  justify-content:space-between;
+  pointer-events:none;
 }
 
 /* preview */
@@ -56,43 +74,27 @@ body {
   top:4px;
   left:6px;
   font-size:9px;
-  opacity:.5;
+  opacity:.4;
 }
 
-#preview-img{
+#preview-box img{
   width:100%;
   height:100%;
   object-fit:cover;
 }
 
-/* ui */
-
-#topbar{
-  position:fixed;
-  top:0;
-  width:100%;
-  padding:18px 24px;
-  display:flex;
-  justify-content:space-between;
-  pointer-events:none;
-}
+/* bottom */
 
 #bottombar{
   position:fixed;
   bottom:0;
   width:100%;
-  padding:18px 24px;
+  padding:0 24px 18px;
   display:flex;
   justify-content:space-between;
 }
 
-#sketch-container{
-  position:fixed;
-  top:0;
-  left:0;
-  width:100vw;
-  height:100vh;
-}
+/* arrows */
 
 .nav-arrow{
   position:fixed;
@@ -103,10 +105,33 @@ body {
   border:none;
   color:white;
   cursor:pointer;
+  opacity:.4;
 }
 
-#arrow-left{ left:10px; }
-#arrow-right{ right:10px; }
+#arrow-left{ left:8px; }
+#arrow-right{ right:8px; }
+
+#sketch-container{
+  position:fixed;
+  top:0;
+  left:0;
+  width:100vw;
+  height:100vh;
+}
+
+.dot{
+  width:5px;
+  height:5px;
+  border-radius:50%;
+  background:white;
+  opacity:.2;
+  cursor:pointer;
+}
+
+.dot.active{
+  opacity:1;
+  transform:scale(1.4);
+}
 
 </style>
 </head>
@@ -115,76 +140,76 @@ body {
 
 <div id="cursor"></div>
 
-<!-- preview -->
 <div id="preview-box">
   <span id="preview-label">preview</span>
   <img id="preview-img" src="gifs/draw.gif">
 </div>
 
-<!-- top -->
 <div id="topbar">
-<div id="sketch-title">—</div>
-<div>Simon Says</div>
+  <div>
+    <div id="sketch-title">—</div>
+  </div>
+  <div>Simon Says</div>
 </div>
 
-<!-- bottom -->
-<div id="bottombar">
-<div id="caption">—</div>
-<div id="page-counter">01 / 04</div>
-</div>
-
-<button class="nav-arrow" id="arrow-left" onclick="navigate(-1)">‹</button>
-<button class="nav-arrow" id="arrow-right" onclick="navigate(1)">›</button>
+<button id="arrow-left" class="nav-arrow" onclick="navigate(-1)">‹</button>
+<button id="arrow-right" class="nav-arrow" onclick="navigate(1)">›</button>
 
 <div id="sketch-container"></div>
 
-  <script src="https://cdn.jsdelivr.net/npm/p5@1.11.11/lib/p5.js"></script> 
-  <script src="https://cdn.jsdelivr.net/npm/p5@1.11.11/lib/addons/p5.sound.min.js"></script> 
-  <script src="https://unpkg.com/ml5@1/dist/ml5.min.js"></script> 
-  <script src="https://unpkg.com/ml5@latest/dist/ml5.min.js"></script>
+<div id="bottombar">
+  <div id="caption">—</div>
+  <div id="page-counter">01 / 04</div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/p5@1.11.11/lib/p5.js"></script>
+<script src="https://unpkg.com/ml5@1/dist/ml5.min.js"></script>
 
 <script>
 
 let globalFontSize = 20
 let globalStrokeWeight = 1
 
-const pages = [
- { title:'Draw with finger', caption:'(Trace with finger)' },
- { title:'Pinch & scale', caption:'(Pinch to resize)' },
- { title:'Blow to scatter', caption:'(Blow letters)' },
- { title:'Nose repels words', caption:'(Move face)' },
+function onSliderChange(type,val){
+ if(type==='size') globalFontSize=parseFloat(val)
+ if(type==='weight') globalStrokeWeight=parseFloat(val)
+}
+
+const pages=[
+ {title:'Draw with finger',caption:'(Trace a path with your index finger)'},
+ {title:'Pinch & scale',caption:'(Pinch thumb & index to resize and move)'},
+ {title:'Blow to scatter',caption:'(Blow into the camera to scatter letters)'},
+ {title:'Nose repels words',caption:'(Move your face to push words away)'},
 ]
 
-const previews = [
+const previews=[
  "gifs/draw.gif",
  "gifs/pinch.gif",
  "gifs/blow.gif",
  "gifs/nose.gif"
 ]
 
-let currentPage = 0
-let currentSketch = null
+let currentPage=0
+let currentSketch=null
 
 function updateUI(index){
 
- document.getElementById("sketch-title").textContent =
+ document.getElementById('sketch-title').textContent=
  pages[index].title
 
- document.getElementById("caption").textContent =
+ document.getElementById('caption').textContent=
  pages[index].caption
 
- document.getElementById("page-counter").textContent =
- String(index+1).padStart(2,"0")+" / 04"
+ document.getElementById('page-counter').textContent=
+ String(index+1).padStart(2,'0')+' / 04'
 
- document.getElementById("preview-img").src =
+ document.getElementById('preview-img').src=
  previews[index]
 }
 
 function navigate(dir){
-
- let next = (currentPage + dir + 4) % 4
+ let next=(currentPage+dir+4)%4
  goTo(next)
-
 }
 
 function goTo(index){
@@ -204,22 +229,26 @@ function loadSketch(index){
   currentSketch.remove()
  }
 
- const container =
- document.getElementById("sketch-container")
+ const container=
+ document.getElementById('sketch-container')
 
- container.innerHTML=""
+ container.innerHTML=''
 
- const sketchFns =
- [sketchDraw,sketchPinch,sketchBlow,sketchNose]
+ const sketchFns=[
+  sketchDraw,
+  sketchPinch,
+  sketchBlow,
+  sketchNose
+ ]
 
- currentSketch =
+ currentSketch=
  new p5(sketchFns[index],container)
 }
 
-document.addEventListener("mousemove",e=>{
- let c=document.getElementById("cursor")
- c.style.left=e.clientX+"px"
- c.style.top=e.clientY+"px"
+document.addEventListener('mousemove',e=>{
+ const c=document.getElementById('cursor')
+ c.style.left=e.clientX+'px'
+ c.style.top=e.clientY+'px'
 })
 
 </script>
