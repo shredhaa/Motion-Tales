@@ -28,7 +28,8 @@ function sketchDraw(p) {
     // Load BodyPix AFTER video exists
     bodySegmentation = ml5.bodySegmentation(
       "BodyPix",
-      { flipped: true },
+      { flipped: true, internalResolution: "low",
+    segmentationThreshold: 0.4},
       () => {
         console.log("BodyPix ready");
 
