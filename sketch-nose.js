@@ -12,7 +12,8 @@ function sketchNose(p) {
   const RETURN_SPEED = 0.04;
 
   p.preload = function() {
-    bodySegmentation = ml5.bodySegmentation("BodyPix", { flipped: true });
+    bodySegmentation = ml5.bodySegmentation("BodyPix", { flipped: true, internalResolution: "low",
+    segmentationThreshold: 0.4 });
     faceMesh = ml5.faceMesh(options);
   };
 
