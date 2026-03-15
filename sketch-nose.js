@@ -126,8 +126,7 @@ function sketchNose(p) {
     // Nose indicator
     if (smoothNoseX !== undefined) {
       p.noFill();
-      p.stroke(0, 80);
-      p.strokeWeight(1);
+      p.noStroke();
       p.circle(smoothNoseX, smoothNoseY, REPEL_RADIUS * 2);
       p.fill(255, 0, 200);
       p.noStroke();
