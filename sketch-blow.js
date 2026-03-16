@@ -1,25 +1,24 @@
 // ─── Sketch 3: Blow to scatter ──────────────────────────────────────
 function sketchBlow(p) {
-  let bodySegmentation, video, segmentation, faceMesh;
+  let bodyPose, video, poses, faceMesh;
   let faces = [];
   let options = { maxFaces: 1, refineLandmarks: false, flipped: true };
   let previousLipDistance;
   let words = [];
   let boxX, boxY, boxW, boxH;
 
-  p.preload = function() {
-    bodySegmentation = ml5.bodySegmentation("BodyPix", { flipped: true, internalResolution: "low",
-    segmentationThreshold: 0.4 });
-    faceMesh = ml5.faceMesh(options);
-  };
-
   p.setup = function() {
     p.createCanvas(p.windowWidth, p.windowHeight);
     video = p.createCapture(p.VIDEO, { flipped: true });
     video.size(p.windowWidth, p.windowHeight);
     video.hide();
-    bodySegmentation.detectStart(video, r => { segmentation = r; });
-    faceMesh.detectStart(video, r => { faces = r; });
+    bodyPose = ml5.bodyPose("BlazePose", { flipped: true }, () => {
+      console.log("BlazePose ready");
+      bodyPose.detectStart(video, r => poses = r);
+    });
+    faceMesh = ml5.faceMesh({ flipped: true }, () => {
+      faceMesh.detectStart(video, r => faces = r);
+    });
     setupBox();
     initWords();
   };
@@ -107,14 +106,32 @@ function sketchBlow(p) {
     }
   }
 
-  p.draw = function() {
+  .draw = function () {
     p.background(224, 255, 0);
 
-    if (segmentation) {
-      p.push();
-      p.tint(255, 120);
-      p.image(segmentation.mask, 0, 0, p.width, p.height);
-      p.pop();
+    // Draw skeleton
+    if (poses && poses.length > 0) {
+      let pose = poses[0];
+
+      // Draw connection lines
+      p.stroke(0, 20);
+      p.strokeWeight(50);
+      for (let [a, b] of connections) {
+        let kpA = pose.keypoints[a];
+        let kpB = pose.keypoints[b];
+        if (kpA && kpB && kpA.confidence > 0.2 && kpB.confidence > 0.2) {
+          p.line(kpA.x, kpA.y, kpB.x, kpB.y);
+        }
+      }
+
+      // Draw joints
+      for (let kp of pose.keypoints) {
+        if (kp.confidence > 0.2) {
+          p.noStroke();
+          p.fill(0, 80);
+          p.circle(kp.x, kp.y, 5);
+        }
+      }
     }
 
     if (faces.length > 0 && faces[0].lips) {
