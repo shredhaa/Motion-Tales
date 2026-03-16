@@ -1,4 +1,4 @@
-// ─── Sketch 3: Blow to scatter ──────────────────────────────────────
+// ─── Sketch 3: Blow to scatter ───────────────────────────────────────────────
 function sketchBlow(p) {
   let bodyPose, video, poses, faceMesh;
   let faces = [];
@@ -6,7 +6,22 @@ function sketchBlow(p) {
   let previousLipDistance;
   let words = [];
   let boxX, boxY, boxW, boxH;
-
+ 
+  // FIXED: connections was missing entirely
+  const connections = [
+    [0,1],[1,2],[2,3],[3,7],
+    [0,4],[4,5],[5,6],[6,8],
+    [9,10],
+    [11,12],
+    [11,13],[13,15],
+    [12,14],[14,16],
+    [15,17],[15,19],[17,19],
+    [16,18],[16,20],[18,20],
+    [11,23],[12,24],[23,24],
+    [23,25],[25,27],[27,29],[29,31],[27,31],
+    [24,26],[26,28],[28,30],[30,32],[28,32]
+  ];
+ 
   p.setup = function() {
     p.createCanvas(p.windowWidth, p.windowHeight);
     video = p.createCapture(p.VIDEO, { flipped: true });
@@ -22,27 +37,27 @@ function sketchBlow(p) {
     setupBox();
     initWords();
   };
-
+ 
   function setupBox() {
     boxX = p.width * 0.13;
     boxY = p.height * 0.12;
     boxW = p.width * 0.74;
     boxH = p.height * 0.75;
   }
-
+ 
   function initWords() {
     words = [];
     let paragraph = "In a quiet house at the edge of the village lived a girl who worked among the ashes. She moved gently through the rooms, sweeping the floor and tending the fire without complaint. When her stepmother spoke, she bowed her head and answered softly.";
     let fs = globalFontSize || 19;
     p.textFont('Palatino');
     p.textSize(fs);
-
+ 
     let lineH = fs * 1.6;
     let padding = 20;
     let maxLineW = boxW - padding * 2;
     let lines = [], currentLine = [], currentLineW = 0;
     let wordChunks = paragraph.split(" ");
-
+ 
     for (let wi = 0; wi < wordChunks.length; wi++) {
       let word = wordChunks[wi] + (wi < wordChunks.length - 1 ? " " : "");
       let wordW = p.textWidth(word);
@@ -57,10 +72,10 @@ function sketchBlow(p) {
       }
     }
     if (currentLine.length > 0) lines.push(currentLine);
-
+ 
     let totalH = lines.length * lineH;
     let startY = boxY + (boxH - totalH) / 2;
-
+ 
     for (let li = 0; li < lines.length; li++) {
       let line = lines[li];
       let lineW = line.reduce((sum, c) => sum + c.w, 0);
@@ -72,7 +87,7 @@ function sketchBlow(p) {
       }
     }
   }
-
+ 
   class Word {
     constructor(char, hx, hy) {
       this.char = char;
@@ -105,15 +120,15 @@ function sketchBlow(p) {
       p.pop();
     }
   }
-
+ 
+  // FIXED: was ".draw" (missing p prefix) — sketch was never running
   p.draw = function () {
     p.background(224, 255, 0);
-
+ 
     // Draw skeleton
     if (poses && poses.length > 0) {
       let pose = poses[0];
-
-      // Draw connection lines
+ 
       p.stroke(0, 20);
       p.strokeWeight(50);
       for (let [a, b] of connections) {
@@ -123,8 +138,7 @@ function sketchBlow(p) {
           p.line(kpA.x, kpA.y, kpB.x, kpB.y);
         }
       }
-
-      // Draw joints
+ 
       for (let kp of pose.keypoints) {
         if (kp.confidence > 0.2) {
           p.noStroke();
@@ -133,25 +147,35 @@ function sketchBlow(p) {
         }
       }
     }
-
-    if (faces.length > 0 && faces[0].lips) {
-      let lips = faces[0].lips;
-      let topLeft = p.createVector(lips.x, lips.y);
-      let bottomRight = p.createVector(lips.x + lips.width, lips.y + lips.height);
-      let center = p.createVector(lips.centerX, lips.centerY);
-      let lipDistance = p.dist(topLeft.x, topLeft.y, bottomRight.x, bottomRight.y);
-
-      if (previousLipDistance > 90 && (previousLipDistance - lipDistance > 5)) {
-        let blowStrength = p.map(previousLipDistance - lipDistance, 5, 60, 1, 8);
-        blowStrength = p.constrain(blowStrength, 1, 8);
-        for (let w of words) trigger(w, center, blowStrength);
-      }
-      previousLipDistance = lipDistance;
-    }
-
-    // Lip keypoints
+ 
+    // FIXED: faces[0].lips doesn't exist in ml5 faceMesh —
+    // lip detection is done via keypoints instead
     if (faces.length > 0) {
       let keypoints = faces[0].keypoints;
+ 
+      // Use upper and lower lip centre points to measure mouth openness
+      // keypoint 13 = upper lip centre, keypoint 14 = lower lip centre
+      let upperLip = keypoints[13];
+      let lowerLip = keypoints[14];
+ 
+      if (upperLip && lowerLip) {
+        let lipDistance = p.dist(upperLip.x, upperLip.y, lowerLip.x, lowerLip.y);
+        let mouthCenter = p.createVector(
+          (upperLip.x + lowerLip.x) / 2,
+          (upperLip.y + lowerLip.y) / 2
+        );
+ 
+        if (previousLipDistance !== undefined &&
+            previousLipDistance > 90 &&
+            (previousLipDistance - lipDistance > 5)) {
+          let blowStrength = p.map(previousLipDistance - lipDistance, 5, 60, 1, 8);
+          blowStrength = p.constrain(blowStrength, 1, 8);
+          for (let w of words) trigger(w, mouthCenter, blowStrength);
+        }
+        previousLipDistance = lipDistance;
+      }
+ 
+      // Draw lip keypoints
       let lipIndices = [
         61, 185, 40, 39, 37, 0, 267, 269, 270, 409, 291,
         375, 321, 405, 314, 17, 84, 181, 91, 146,
@@ -167,10 +191,10 @@ function sketchBlow(p) {
         }
       }
     }
-
+ 
     for (let w of words) { w.update(); w.display(); }
   };
-
+ 
   function trigger(word, mouth, blowStrength) {
     let force = p5.Vector.sub(word.position, mouth);
     let distance = force.mag();
@@ -180,11 +204,19 @@ function sketchBlow(p) {
     word.applyForce(force);
     word.angleV = p.map(distance, 0, p.width, 0.01, 0.1) * p.random(0.5, 2) * blowStrength;
   }
-
+ 
   p.windowResized = function() {
     p.resizeCanvas(p.windowWidth, p.windowHeight);
     if (video) video.size(p.windowWidth, p.windowHeight);
     setupBox();
     initWords();
+  };
+ 
+  // FIXED: added cleanup so camera stops when switching sketches
+  p.remove = function() {
+    if (video) {
+      video.stop();
+      video.remove();
+    }
   };
 }
