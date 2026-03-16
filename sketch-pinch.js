@@ -1,6 +1,6 @@
 // ─── Sketch 2: Pinch & Scale ────────────────────────────────────────
 function sketchPinch(p) {
-  let bodySegmentation, video, segmentation, handPose;
+  let bodyPose, video, poses, handPose;
   let hands = [];
   let paragraph = "But when the work was finished, she walked outside to a small tree growing beside her mother’s grave. There she whispered her wishes into the branches and waited as the wind moved through the leaves. Sometimes a bird would drop a gift into her hands, as if the world itself had heard her sorrow.";
   let smoothPinch = 40;
@@ -10,31 +10,64 @@ function sketchPinch(p) {
   let smoothTextX, smoothTextY;
   const POS_SMOOTH = 0.1;
 
-  p.preload = function() {
-    bodySegmentation = ml5.bodySegmentation("BodyPix", { flipped: true,  internalResolution: "low",
-    segmentationThreshold: 0.4});
-    handPose = ml5.handPose({ flipped: true });
-  };
+   const connections = [
+    [0,1],[1,2],[2,3],[3,7],   // face
+    [0,4],[4,5],[5,6],[6,8],
+    [9,10],                     // mouth
+    [11,12],                    // shoulders
+    [11,13],[13,15],            // left arm
+    [12,14],[14,16],            // right arm
+    [15,17],[15,19],[17,19],    // left hand
+    [16,18],[16,20],[18,20],    // right hand
+    [11,23],[12,24],[23,24],    // torso
+    [23,25],[25,27],[27,29],[29,31],[27,31], // left leg
+    [24,26],[26,28],[28,30],[30,32],[28,32]  // right leg
+  ];
 
   p.setup = function() {
     p.createCanvas(p.windowWidth, p.windowHeight);
     video = p.createCapture(p.VIDEO, { flipped: true });
     video.size(p.windowWidth, p.windowHeight);
     video.hide();
-    bodySegmentation.detectStart(video, r => { segmentation = r; });
-    handPose.detectStart(video, r => { hands = r; });
+    
+    bodyPose = ml5.bodyPose("BlazePose", { flipped: true }, () => {
+      console.log("BlazePose ready");
+      bodyPose.detectStart(video, r => poses = r);
+    });
+    
+    handPose = ml5.handPose({ flipped: true }, () => {
+      handPose.detectStart(video, r => hands = r);
+    });
     smoothTextX = p.width / 2;
     smoothTextY = p.height / 2;
   };
 
-  p.draw = function() {
-    p.background(224, 82, 255);
+   p.draw = function () {
+    p.background(255, 102, 0);
 
-    if (segmentation) {
-      p.push();
-      p.tint(255, 120);
-      p.image(segmentation.mask, 0, 0, p.width, p.height);
-      p.pop();
+    // Draw skeleton
+    if (poses && poses.length > 0) {
+      let pose = poses[0];
+
+      // Draw connection lines
+      p.stroke(0, 20);
+      p.strokeWeight(50);
+      for (let [a, b] of connections) {
+        let kpA = pose.keypoints[a];
+        let kpB = pose.keypoints[b];
+        if (kpA && kpB && kpA.confidence > 0.2 && kpB.confidence > 0.2) {
+          p.line(kpA.x, kpA.y, kpB.x, kpB.y);
+        }
+      }
+
+      // Draw joints
+      for (let kp of pose.keypoints) {
+        if (kp.confidence > 0.2) {
+          p.noStroke();
+          p.fill(0, 80);
+          p.circle(kp.x, kp.y, 5);
+        }
+      }
     }
 
     if (hands.length > 0) {
