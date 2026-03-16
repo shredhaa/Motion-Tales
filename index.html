@@ -7,318 +7,251 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=IM+Fell+English:ital@0;1&display=swap" rel="stylesheet">
   <style>
-    :root {
-      --bg: #e0ff00;
-      --black: #0a0a0a;
-      --accent: #ff6600;
-      --purple: #e052ff;
-      --green: #00c800;
-    }
-
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-
+    :root { --black: #0a0a0a; --sidebar-w: 340px; }
+    * { margin:0; padding:0; box-sizing:border-box; }
     body {
-      background: var(--black);
-      color: var(--black);
-      font-family: 'IM Fell English', serif;
-      overflow: hidden;
-      height: 100vh;
-      width: 100vw;
-      cursor: none;
+      background:var(--black);
+      font-family:'IM Fell English',serif;
+      overflow:hidden;
+      height:100vh; width:100vw;
+      cursor:none;
     }
 
-    /* Custom cursor */
     #cursor {
-      position: fixed;
-      width: 10px;
-      height: 10px;
-      background: white;
-      border-radius: 50%;
-      pointer-events: none;
-      z-index: 9999;
-      transform: translate(-50%, -50%);
-      transition: transform 0.1s;
-      mix-blend-mode: difference;
+      position:fixed; width:10px; height:10px;
+      background:white; border-radius:50%;
+      pointer-events:none; z-index:9999;
+      transform:translate(-50%,-50%);
+      mix-blend-mode:difference;
     }
 
-    /* Page wrapper */
-    #page {
-      position: relative;
-      width: 100vw;
-      height: 100vh;
-      display: flex;
-      flex-direction: column;
+    #transition {
+      position:fixed; inset:0; background:black;
+      z-index:600; opacity:0; pointer-events:none;
+      transition:opacity 0.3s;
     }
+    #transition.fade-in { opacity:1; pointer-events:all; }
 
-    /* Top bar */
+    #sketch-container { position:fixed; inset:0; z-index:1; }
+    #sketch-container canvas { display:block; }
+
     #topbar {
-      position: fixed;
-      top: 0; left: 0;
-      width: 100%;
-      z-index: 100;
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-start;
-      padding: 18px 24px 0;
-      pointer-events: none;
+      position:fixed; top:0; left:0; right:0;
+      z-index:100; display:flex;
+      justify-content:space-between; align-items:flex-start;
+      padding:18px 24px 0; pointer-events:none;
     }
 
-    #top-left {
-      display: flex;
-      flex-direction: column;
-      gap: 2px;
+    #preview-box {
+      position:fixed; top:18px; left:24px;
+      width:150px; height:100px;
+      background:var(--black);
+      border:1px solid rgba(255,255,255,0.2);
+      z-index:101; overflow:hidden;
+      display:flex; align-items:center; justify-content:center;
     }
+    #preview-label {
+      font-size:9px; letter-spacing:0.15em;
+      text-transform:uppercase; color:white;
+      opacity:0.4; position:absolute; top:4px; left:6px;
+    }
+    #preview-box img { width:150%; height:150%; object-fit:cover; }
 
     .label-tag {
-      margin-top:45px;
-      font-size: 11px;
-      letter-spacing: 0.15em;
-      text-transform: uppercase;
-      color: white;
-      opacity: 0.5;
+      margin-top:45px; font-size:11px;
+      letter-spacing:0.15em; text-transform:uppercase;
+      color:white; opacity:0.5;
     }
 
     #sketch-title {
-      font-size: 13px;
-      letter-spacing: 0.12em;
-      text-transform: uppercase;
-      color: black;
-      font-style: italic;
+      font-size:13px; letter-spacing:0.12em;
+      text-transform:uppercase; color:black;
+      font-style:italic; cursor:pointer;
+      pointer-events:all;
+      border-bottom:1px solid rgba(0,0,0,0.35);
+      display:inline-block;
+      transition:opacity 0.2s;
     }
+    #sketch-title:hover { opacity:0.55; }
 
     #site-name {
-      font-size: 13px;
-      letter-spacing: 0.15em;
-      text-transform: uppercase;
-      color: black;
-      text-align: right;
+      font-size:13px; letter-spacing:0.15em;
+      text-transform:uppercase; color:black; text-align:right;
     }
 
-    /* Bottom bar */
-    #bottombar {
-      position: fixed;
-      bottom: 0; left: 0;
-      width: 100%;
-      z-index: 100;
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-end;
-      padding: 0 24px 18px;
-      pointer-events: none;
-    }
-
-    #caption {
-      font-size: 12px;
-      letter-spacing: 0.05em;
-      color: black;
-      font-style: italic;
-      opacity: 0.7;
-    }
-
-    #page-counter {
-      font-size: 12px;
-      letter-spacing: 0.1em;
-      color: white;
-      opacity: 0.5;
-    }
-
-    /* Sliders */
-    #sliders {
-      position: fixed;
-      bottom: 18px;
-      left: 50%;
-      transform: translateX(-50%);
-      z-index: 100;
-      display: flex;
-      gap: 40px;
-      align-items: center;
-      pointer-events: all;
-    }
-
-    .slider-group {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 4px;
-    }
-
-    .slider-label {
-      font-size: 10px;
-      letter-spacing: 0.12em;
-      text-transform: uppercase;
-      color: black;
-      opacity: 0.5;
-    }
-
-    input[type=range] {
-      -webkit-appearance: none;
-      width: 120px;
-      height: 1px;
-      background: rgba(255,255,255,0.3);
-      outline: none;
-      cursor: pointer;
-    }
-
-    input[type=range]::-webkit-slider-thumb {
-      -webkit-appearance: none;
-      width: 8px;
-      height: 8px;
-      border-radius: 50%;
-      background: white;
-      cursor: pointer;
-    }
-
-    /* Navigation arrows */
     .nav-arrow {
-      position: fixed;
-      top: 50%;
-      transform: translateY(-50%);
-      z-index: 100;
-      background: none;
-      border: none;
-      color: black;
-      font-size: 28px;
-      cursor: pointer;
-      opacity: 0.4;
-      transition: opacity 0.2s;
-      font-family: 'IM Fell English', serif;
-      padding: 20px;
-      pointer-events: all;
+      position:fixed; top:50%; transform:translateY(-50%);
+      z-index:100; background:none; border:none;
+      color:black; font-size:28px; cursor:pointer;
+      opacity:0.4; transition:opacity 0.2s;
+      font-family:'IM Fell English',serif; padding:20px;
+    }
+    .nav-arrow:hover { opacity:1; }
+    #arrow-left { left:8px; }
+    #arrow-right { right:8px; }
+
+    #bottombar {
+      position:fixed; bottom:0; left:0; right:0;
+      z-index:100; display:flex;
+      justify-content:space-between; align-items:flex-end;
+      padding:0 24px 18px; pointer-events:none;
+    }
+    #caption {
+      font-size:12px; letter-spacing:0.05em;
+      color:black; font-style:italic; opacity:0.7; max-width:60%;
+    }
+    #page-counter {
+      font-size:12px; letter-spacing:0.1em;
+      color:white; opacity:0.5;
     }
 
-    .nav-arrow:hover { opacity: 1; }
-    #arrow-left { left: 8px; }
-    #arrow-right { right: 8px; }
-
-    /* Preview box with GIF */
-    #preview-box {
-      position: fixed;
-      top: 18px;
-      left: 24px;
-      width: 150px;
-      height: 100px;
-      background: var(--black);
-      border: 1px solid rgba(255,255,255,0.2);
-      z-index: 101;
-      overflow: hidden;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-
-    #preview-label {
-      font-size: 9px;
-      letter-spacing: 0.15em;
-      text-transform: uppercase;
-      color: white;
-      opacity: 0.4;
-      position: absolute;
-      top: 4px;
-      left: 6px;
-    }
-
-    #preview-box img {
-      width: 150%;
-      height: 150%;
-      object-fit: cover;
-    }
-
-    .preview-dot {
-      width: 6px;
-      height: 6px;
-      border-radius: 50%;
-      background: white;
-      opacity: 0.2;
-      margin-top: 12px;
-    }
-
-    /* Sketch canvas container */
-    #sketch-container {
-      position: fixed;
-      top: 0; left: 0;
-      width: 100vw;
-      height: 100vh;
-      z-index: 1;
-    }
-
-    #sketch-container canvas {
-      display: block;
-    }
-
-    /* Sketch dots nav */
     #dots-nav {
-      position: fixed;
-      bottom: 52px;
-      left: 50%;
-      transform: translateX(-50%);
-      z-index: 100;
-      display: flex;
-      gap: 8px;
-      align-items: center;
+      position:fixed; bottom:52px;
+      left:50%; transform:translateX(-50%);
+      z-index:100; display:flex; gap:8px;
     }
-
     .dot {
-      width: 5px;
-      height: 5px;
-      border-radius: 50%;
-      background: white;
-      opacity: 0.2;
-      transition: opacity 0.3s, transform 0.3s;
-      cursor: pointer;
-      pointer-events: all;
+      width:5px; height:5px; border-radius:50%;
+      background:white; opacity:0.2;
+      transition:opacity 0.3s,transform 0.3s;
+      cursor:pointer;
+    }
+    .dot.active { opacity:1; transform:scale(1.4); }
+
+    #sliders {
+      position:fixed; bottom:18px;
+      left:50%; transform:translateX(-50%);
+      z-index:100; display:flex; gap:40px;
+    }
+    .slider-group { display:flex; flex-direction:column; align-items:center; gap:4px; }
+    .slider-label {
+      font-size:10px; letter-spacing:0.12em;
+      text-transform:uppercase; color:black; opacity:0.5;
+    }
+    input[type=range] {
+      -webkit-appearance:none; width:120px; height:1px;
+      background:rgba(0,0,0,0.25); outline:none; cursor:pointer;
+    }
+    input[type=range]::-webkit-slider-thumb {
+      -webkit-appearance:none; width:8px; height:8px;
+      border-radius:50%; background:black; cursor:pointer;
     }
 
-    .dot.active {
-      opacity: 1;
-      transform: scale(1.4);
+    /* ── Sidebar ── */
+    #sidebar-backdrop {
+      position:fixed; inset:0;
+      background:rgba(0,0,0,0.25);
+      z-index:299; opacity:0; pointer-events:none;
+      transition:opacity 0.4s;
+    }
+    #sidebar-backdrop.open { opacity:1; pointer-events:all; }
+
+    #sidebar {
+      position:fixed; top:0; right:0;
+      width:var(--sidebar-w); height:100vh;
+      background:white; z-index:300;
+      transform:translateX(100%);
+      transition:transform 0.45s cubic-bezier(0.16,1,0.3,1);
+      display:flex; flex-direction:column;
+      box-shadow:-6px 0 48px rgba(0,0,0,0.12);
+    }
+    #sidebar.open { transform:translateX(0); }
+
+    #sidebar-close {
+      position:absolute; top:16px; left:16px;
+      background:none; border:none;
+      font-size:22px; cursor:pointer;
+      color:var(--black); opacity:0.35;
+      font-family:'IM Fell English',serif;
+      transition:opacity 0.2s; z-index:10;
+    }
+    #sidebar-close:hover { opacity:1; }
+
+    #sidebar-header {
+      padding:48px 24px 14px;
+      border-bottom:1px solid rgba(0,0,0,0.07);
+    }
+    #sidebar-header h2 {
+      font-size:14px; letter-spacing:0.08em;
+      text-transform:uppercase; font-style:italic;
+      font-weight:normal; color:var(--black); margin-bottom:4px;
+    }
+    #sidebar-header p {
+      font-size:10px; letter-spacing:0.15em;
+      text-transform:uppercase; opacity:0.35; color:var(--black);
     }
 
-    /* Page transition overlay */
-    #transition {
-      position: fixed;
-      top: 0; left: 0;
-      width: 100vw;
-      height: 100vh;
-      background: black;
-      z-index: 200;
-      opacity: 0;
-      pointer-events: none;
-      transition: opacity 0.3s;
+    #sidebar-scroll {
+      flex:1; overflow-y:auto;
+      padding:20px 24px;
+      scroll-behavior:smooth;
+    }
+    #sidebar-scroll::-webkit-scrollbar { width:3px; }
+    #sidebar-scroll::-webkit-scrollbar-thumb { background:rgba(0,0,0,0.12); }
+
+    .story-block { margin-bottom:20px; }
+
+    .story-para {
+      font-size:12.5px; line-height:1.8;
+      color:var(--black); opacity:0.3;
+      transition:opacity 0.4s, background 0.4s;
+      font-family:'IM Fell English',serif;
+      padding:6px 8px; border-radius:2px;
+      margin:-6px -8px;
+    }
+    .story-para.active {
+      opacity:1;
+      background:rgba(255,220,0,0.35);
+    }
+    .story-caption {
+      font-size:10px; font-style:italic;
+      color:var(--black); opacity:0.35;
+      margin-top:5px; padding-left:8px;
+      font-family:'IM Fell English',serif;
     }
 
-    #transition.fade-in { opacity: 1; pointer-events: all; }
+    /* Divider line between blocks */
+    .story-block + .story-block { border-top:1px solid rgba(0,0,0,0.05); padding-top:20px; }
 
+    #sidebar-footer {
+      padding:14px 24px;
+      border-top:1px solid rgba(0,0,0,0.07);
+      display:flex; align-items:center;
+      justify-content:space-between;
+    }
+
+    .logo-penguin { width:28px; height:38px; }
+    .logo-monotype {
+      font-size:10px; letter-spacing:0.22em;
+      text-transform:uppercase; color:var(--black);
+      opacity:0.4; font-family:'IM Fell English',serif;
+    }
   </style>
 </head>
 <body>
 
 <div id="cursor"></div>
 <div id="transition"></div>
+<div id="sketch-container"></div>
 
 <!-- Top bar -->
 <div id="topbar">
-  <div style="display:flex; flex-direction:column; gap:2px;">
-    <!-- Preview box -->
+  <div style="display:flex;flex-direction:column;gap:2px;">
     <div id="preview-box">
-      <span id="preview-label">preview</span>
+      <span id="preview-label">animation</span>
       <img id="preview-img" src="gifs/draw.gif">
     </div>
-    <div style="margin-top: 72px;">
+    <div style="margin-top:72px;">
       <div class="label-tag">Interaction</div>
-      <div id="sketch-title">—</div>
+      <div id="sketch-title" onclick="openSidebar()">—</div>
     </div>
   </div>
-  <div id="site-name">Simon Says</div>
+  <div id="site-name">Motion Tales</div>
 </div>
 
-<!-- Navigation -->
-<button class="nav-arrow" id="arrow-left" onclick="navigate(-1)">&#8249;</button>
+<button class="nav-arrow" id="arrow-left"  onclick="navigate(-1)">&#8249;</button>
 <button class="nav-arrow" id="arrow-right" onclick="navigate(1)">&#8250;</button>
 
-<!-- Sketch canvas -->
-<div id="sketch-container"></div>
-
-<!-- Dots nav -->
 <div id="dots-nav">
   <div class="dot active" onclick="goTo(0)"></div>
   <div class="dot" onclick="goTo(1)"></div>
@@ -326,53 +259,129 @@
   <div class="dot" onclick="goTo(3)"></div>
 </div>
 
-<!-- Bottom bar -->
 <div id="bottombar">
   <div id="caption">—</div>
   <div id="page-counter">01 / 04</div>
 </div>
 
-<!-- Sliders -->
 <div id="sliders">
   <div class="slider-group">
     <span class="slider-label">Size</span>
     <input type="range" id="slider-size" min="8" max="48" value="20"
-      oninput="onSliderChange('size', this.value)">
+      oninput="globalFontSize=parseFloat(this.value)">
   </div>
   <div class="slider-group">
     <span class="slider-label">Weight</span>
     <input type="range" id="slider-weight" min="1" max="6" value="1" step="0.5"
-      oninput="onSliderChange('weight', this.value)">
+      oninput="globalStrokeWeight=parseFloat(this.value)">
   </div>
 </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/p5@1.11.11/lib/p5.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/p5@1.11.11/lib/addons/p5.sound.min.js"></script>
-    <script src="https://unpkg.com/ml5@1/dist/ml5.min.js"></script>
-    <script src="https://unpkg.com/ml5@latest/dist/ml5.min.js"></script>
+<!-- Sidebar -->
+<div id="sidebar-backdrop" onclick="closeSidebar()"></div>
+
+<div id="sidebar">
+  <button id="sidebar-close" onclick="closeSidebar()">&#215;</button>
+
+  <div id="sidebar-header">
+    <h2>Cinderella Across Cultures</h2>
+    <p>A Blended Story of Gesture and Voice</p>
+  </div>
+
+  <div id="sidebar-scroll">
+
+    <div class="story-block" data-page="2">
+      <p class="story-para">In a quiet house at the edge of the village lived a girl who worked among the ashes. She moved gently through the rooms, sweeping the floor and tending the fire without complaint. When her stepmother spoke, she bowed her head and answered softly.</p>
+      <p class="story-caption">(Gesture of patience and endurance from Western Cinderella)</p>
+    </div>
+
+    <div class="story-block" data-page="1">
+      <p class="story-para">But when the work was finished, she walked outside to a small tree growing beside her mother's grave. There she whispered her wishes into the branches and waited as the wind moved through the leaves. Sometimes a bird would drop a gift into her hands, as if the world itself had heard her sorrow.</p>
+      <p class="story-caption">(Ritual and quiet resilience from Grimms' Fairy Tales, the story of Aschenputtel)</p>
+    </div>
+
+    <div class="story-block" data-page="3">
+      <p class="story-para">One day, while gathering food near the river, she found a small fish caught in the reeds. Instead of taking it home, she freed it and spoke kindly to it. The fish returned again and again, bringing comfort and small wonders, as if kindness had awakened a hidden spirit in the water.</p>
+    </div>
+
+    <div class="story-block" data-page="-1">
+      <p class="story-para">Soon news spread that a great celebration would be held at the palace. Every young woman wished to attend. Cinderella's stepsisters dressed in bright colours and jewels, while she remained in the ashes. She closed her eyes and imagined another life — a moment where she could step into the light and be seen.</p>
+      <p class="story-caption">(Dreaming and emotional hope inspired by Western Cinderella)</p>
+    </div>
+
+    <div class="story-block" data-page="0">
+      <p class="story-para">Help arrived in different ways depending on the story being told. A fairy godmother transformed pumpkins and mice into a shining carriage.</p>
+      <p class="story-caption">(Magic intervention — Perrault)</p>
+    </div>
+
+    <div class="story-block" data-page="1">
+      <p class="story-para">A white bird from the tree dropped a beautiful dress into her hands.</p>
+      <p class="story-caption">(Nature's justice — Grimm)</p>
+    </div>
+
+    <div class="story-block" data-page="3">
+      <p class="story-para">The spirit of the magical fish guided her toward hidden treasures and golden shoes.</p>
+      <p class="story-caption">(Spiritual balance — Ye Xian)</p>
+    </div>
+
+    <div class="story-block" data-page="-1">
+      <p class="story-para">However the magic appeared, Cinderella stepped into the palace transformed. She walked carefully across the ballroom floor — graceful yet unsure, as music filled the air. For the first time, she lifted her head. She was no longer invisible.</p>
+    </div>
+
+    <div class="story-block" data-page="-1">
+      <p class="story-para">But time, fate, or enchantment would not allow the moment to last. As she fled the palace steps, one shoe slipped from her foot — sometimes glass, sometimes gold, left behind like a quiet message.</p>
+    </div>
+
+    <div class="story-block" data-page="3">
+      <p class="story-para">The prince searched far and wide for the one whose step matched the lost shoe. When he found her, she did not bow her head this time. She stood upright, calm and certain.</p>
+    </div>
+
+    <div class="story-block" data-page="-1">
+      <p class="story-para">In some stories she had waited patiently. In others she had trusted the justice of nature. In another she had acted with kindness and spiritual balance. And in yet another she had simply dared to dream.</p>
+    </div>
+
+    <div class="story-block" data-page="-1">
+      <p class="story-para">Yet in every telling, the small gesture of a step forward changed her fate.</p>
+    </div>
+
+  </div>
+
+  <!-- Footer logos -->
+  <div id="sidebar-footer">
+    <!-- Penguin Books logo (simplified SVG) -->
+    <svg class="logo-penguin" viewBox="0 0 28 38" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <rect width="28" height="38" rx="3" fill="#E8580A"/>
+      <ellipse cx="14" cy="16" rx="7" ry="9" fill="white"/>
+      <ellipse cx="14" cy="11" rx="4.5" ry="5" fill="#1a1a1a"/>
+      <ellipse cx="14" cy="12.5" rx="2.5" ry="3" fill="white"/>
+      <circle cx="12.2" cy="11" r="1" fill="#1a1a1a"/>
+      <circle cx="15.8" cy="11" r="1" fill="#1a1a1a"/>
+      <ellipse cx="9" cy="17" rx="2.5" ry="5" fill="#1a1a1a"/>
+      <ellipse cx="19" cy="17" rx="2.5" ry="5" fill="#1a1a1a"/>
+      <ellipse cx="11" cy="27" rx="3.5" ry="2" fill="#E8580A"/>
+      <ellipse cx="17" cy="27" rx="3.5" ry="2" fill="#E8580A"/>
+    </svg>
+
+    <span class="logo-monotype">Monotype</span>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/p5@1.11.11/lib/p5.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/p5@1.11.11/lib/addons/p5.sound.min.js"></script>
+<script src="https://unpkg.com/ml5@latest/dist/ml5.min.js"></script>
 
 <script>
 let globalFontSize = 20;
 let globalStrokeWeight = 1;
 
-function onSliderChange(type, val) {
-  if (type === 'size') globalFontSize = parseFloat(val);
-  if (type === 'weight') globalStrokeWeight = parseFloat(val);
-}
-
 const pages = [
-  { title: 'Draw with finger', caption: '(Magic intervention by Perrault)' },
-  { title: 'Pinch & scale', caption: '(Ritual and quiet resilience  from Grimms Fairy Tales, the story of Aschenputtel)' },
-  { title: 'Blow to scatter', caption: '(Gesture of patience and endurance from  Western Cinderella)' },
-  { title: 'Nose repels words', caption: '(Incerpts from various adaptations of Cinderella)' },
+  { title:'Draw with finger',  caption:'(Magic intervention by Perrault)' },
+  { title:'Pinch & scale',     caption:'(Ritual and quiet resilience from Grimms\' Fairy Tales, the story of Aschenputtel)' },
+  { title:'Blow to scatter',   caption:'(Gesture of patience and endurance from Western Cinderella)' },
+  { title:'Nose repels words', caption:'(Excerpts from various adaptations of Cinderella)' },
 ];
 
-const previews = [
-  "gifs/draw.GIF",
-  "gifs/pinch.GIF",
-  "gifs/blow.GIF",
-  "gifs/nose.GIF"
-];
+const previews = ['gifs/draw.GIF','gifs/pinch.GIF','gifs/blow.GIF','gifs/nose.GIF'];
 
 let currentPage = 0;
 let currentSketch = null;
@@ -380,19 +389,36 @@ let currentSketch = null;
 function updateUI(index) {
   document.getElementById('sketch-title').textContent = pages[index].title;
   document.getElementById('caption').textContent = pages[index].caption;
-  document.getElementById('page-counter').textContent =
-    String(index + 1).padStart(2, '0') + ' / 04';
-  document.querySelectorAll('.dot').forEach((d, i) => {
-    d.classList.toggle('active', i === index);
-  });
-  const img = document.getElementById("preview-img");
-  if(img) img.src = previews[index];
+  document.getElementById('page-counter').textContent = String(index+1).padStart(2,'0') + ' / 04';
+  document.querySelectorAll('.dot').forEach((d,i) => d.classList.toggle('active', i===index));
+  const img = document.getElementById('preview-img');
+  if (img) img.src = previews[index];
+  highlightStory(index);
 }
 
-function navigate(dir) {
-  let next = (currentPage + dir + 4) % 4;
-  goTo(next);
+function highlightStory(index) {
+  document.querySelectorAll('.story-block').forEach(block => {
+    let pg = parseInt(block.dataset.page);
+    let para = block.querySelector('.story-para');
+    para.classList.toggle('active', pg === index);
+  });
 }
+
+function openSidebar() {
+  document.getElementById('sidebar').classList.add('open');
+  document.getElementById('sidebar-backdrop').classList.add('open');
+  setTimeout(() => {
+    let active = document.querySelector('.story-para.active');
+    if (active) active.scrollIntoView({ behavior:'smooth', block:'center' });
+  }, 460);
+}
+
+function closeSidebar() {
+  document.getElementById('sidebar').classList.remove('open');
+  document.getElementById('sidebar-backdrop').classList.remove('open');
+}
+
+function navigate(dir) { goTo((currentPage + dir + 4) % 4); }
 
 function goTo(index) {
   if (index === currentPage) return;
@@ -407,36 +433,31 @@ function goTo(index) {
 }
 
 function loadSketch(index) {
-  if (currentSketch) {
-    currentSketch.remove();
-    currentSketch = null;
-  }
-  const container = document.getElementById('sketch-container');
-  container.innerHTML = '';
+  if (currentSketch) { currentSketch.remove(); currentSketch = null; }
+  document.getElementById('sketch-container').innerHTML = '';
   const sketchFns = [sketchDraw, sketchPinch, sketchBlow, sketchNose];
-  currentSketch = new p5(sketchFns[index], container);
+  currentSketch = new p5(sketchFns[index], document.getElementById('sketch-container'));
 }
 
 document.addEventListener('keydown', e => {
   if (e.key === 'ArrowRight') navigate(1);
-  if (e.key === 'ArrowLeft') navigate(-1);
+  if (e.key === 'ArrowLeft')  navigate(-1);
+  if (e.key === 'Escape')     closeSidebar();
 });
 
 document.addEventListener('mousemove', e => {
   const c = document.getElementById('cursor');
   c.style.left = e.clientX + 'px';
-  c.style.top = e.clientY + 'px';
+  c.style.top  = e.clientY + 'px';
 });
 </script>
 
-<!-- Sketch scripts -->
 <script src="sketch-draw.js"></script>
 <script src="sketch-pinch.js"></script>
 <script src="sketch-blow.js"></script>
 <script src="sketch-nose.js"></script>
 
 <script>
-  // Load first sketch
   updateUI(0);
   loadSketch(0);
 </script>
