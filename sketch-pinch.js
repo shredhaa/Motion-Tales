@@ -1,55 +1,53 @@
-// ─── Sketch 2: Pinch & Scale ────────────────────────────────────────
 function sketchPinch(p) {
   let bodyPose, video, poses, handPose;
   let hands = [];
-  let paragraph = "But when the work was finished, she walked outside to a small tree growing beside her mother’s grave. There she whispered her wishes into the branches and waited as the wind moved through the leaves. Sometimes a bird would drop a gift into her hands, as if the world itself had heard her sorrow.";
+  let paragraph = "But when the work was finished, she walked outside to a small tree growing beside her mother's grave. There she whispered her wishes into the branches and waited as the wind moved through the leaves. Sometimes a bird would drop a gift into her hands, as if the world itself had heard her sorrow.";
   let smoothPinch = 40;
   const PINCH_SMOOTH = 0.09;
   const PINCH_CLOSED = 40;
   const PINCH_OPEN = 160;
   let smoothTextX, smoothTextY;
   const POS_SMOOTH = 0.1;
-
-   const connections = [
-    [0,1],[1,2],[2,3],[3,7],   // face
+ 
+  const connections = [
+    [0,1],[1,2],[2,3],[3,7],
     [0,4],[4,5],[5,6],[6,8],
-    [9,10],                     // mouth
-    [11,12],                    // shoulders
-    [11,13],[13,15],            // left arm
-    [12,14],[14,16],            // right arm
-    [15,17],[15,19],[17,19],    // left hand
-    [16,18],[16,20],[18,20],    // right hand
-    [11,23],[12,24],[23,24],    // torso
-    [23,25],[25,27],[27,29],[29,31],[27,31], // left leg
-    [24,26],[26,28],[28,30],[30,32],[28,32]  // right leg
+    [9,10],
+    [11,12],
+    [11,13],[13,15],
+    [12,14],[14,16],
+    [15,17],[15,19],[17,19],
+    [16,18],[16,20],[18,20],
+    [11,23],[12,24],[23,24],
+    [23,25],[25,27],[27,29],[29,31],[27,31],
+    [24,26],[26,28],[28,30],[30,32],[28,32]
   ];
-
+ 
   p.setup = function() {
     p.createCanvas(p.windowWidth, p.windowHeight);
     video = p.createCapture(p.VIDEO, { flipped: true });
     video.size(p.windowWidth, p.windowHeight);
     video.hide();
-    
+ 
     bodyPose = ml5.bodyPose("BlazePose", { flipped: true }, () => {
       console.log("BlazePose ready");
       bodyPose.detectStart(video, r => poses = r);
     });
-    
+ 
     handPose = ml5.handPose({ flipped: true }, () => {
       handPose.detectStart(video, r => hands = r);
     });
+ 
     smoothTextX = p.width / 2;
     smoothTextY = p.height / 2;
   };
-
-   p.draw = function () {
+ 
+  p.draw = function () {
     p.background(224, 82, 255);
-
+ 
     // Draw skeleton
     if (poses && poses.length > 0) {
       let pose = poses[0];
-
-      // Draw connection lines
       p.stroke(0, 20);
       p.strokeWeight(50);
       for (let [a, b] of connections) {
@@ -59,8 +57,6 @@ function sketchPinch(p) {
           p.line(kpA.x, kpA.y, kpB.x, kpB.y);
         }
       }
-
-      // Draw joints
       for (let kp of pose.keypoints) {
         if (kp.confidence > 0.2) {
           p.noStroke();
@@ -69,7 +65,7 @@ function sketchPinch(p) {
         }
       }
     }
-
+ 
     if (hands.length > 0) {
       let hand = hands[0];
       let thumb = hand.keypoints[4];
@@ -86,12 +82,16 @@ function sketchPinch(p) {
       p.circle(thumb.x, thumb.y, 10);
       p.circle(index.x, index.y, 10);
     }
-
+ 
     let baseFontSize = globalFontSize || 17;
-    let fontSize = p.constrain(p.map(smoothPinch, PINCH_CLOSED, PINCH_OPEN, baseFontSize * 0.6, baseFontSize * 4), baseFontSize * 0.6, baseFontSize * 4);
+    let fontSize = p.constrain(
+      p.map(smoothPinch, PINCH_CLOSED, PINCH_OPEN, baseFontSize * 0.6, baseFontSize * 4),
+      baseFontSize * 0.6,
+      baseFontSize * 4
+    );
     drawScaledText(fontSize, baseFontSize);
   };
-
+ 
   function drawScaledText(fontSize, baseFontSize) {
     let scaleFactor = fontSize / baseFontSize;
     let boxW = p.width * 0.7;
@@ -107,9 +107,17 @@ function sketchPinch(p) {
     p.text(paragraph, 0, 0, boxW / 2, p.height);
     p.pop();
   }
-
+ 
   p.windowResized = function() {
     p.resizeCanvas(p.windowWidth, p.windowHeight);
     if (video) video.size(p.windowWidth, p.windowHeight);
+  };
+ 
+  // FIXED: added cleanup so camera stops when switching sketches
+  p.remove = function() {
+    if (video) {
+      video.stop();
+      video.remove();
+    }
   };
 }
