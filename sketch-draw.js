@@ -8,21 +8,6 @@ function sketchDraw(p) {
   let smoothX, smoothY;
   const SMOOTHEN = 0.07;
 
-  // BlazePose connections — pairs of keypoint indices to draw skeleton lines
-  const connections = [
-    [0,1],[1,2],[2,3],[3,7],   // face
-    [0,4],[4,5],[5,6],[6,8],
-    [9,10],                     // mouth
-    [11,12],                    // shoulders
-    [11,13],[13,15],            // left arm
-    [12,14],[14,16],            // right arm
-    [15,17],[15,19],[17,19],    // left hand
-    [16,18],[16,20],[18,20],    // right hand
-    [11,23],[12,24],[23,24],    // torso
-    [23,25],[25,27],[27,29],[29,31],[27,31], // left leg
-    [24,26],[26,28],[28,30],[30,32],[28,32]  // right leg
-  ];
-
   p.setup = function () {
     p.createCanvas(p.windowWidth, p.windowHeight);
     video = p.createCapture(p.VIDEO);
@@ -30,7 +15,6 @@ function sketchDraw(p) {
     video.hide();
 
     bodyPose = ml5.bodyPose("BlazePose", { flipped: true }, () => {
-      console.log("BlazePose ready");
       bodyPose.detectStart(video, r => poses = r);
     });
 
@@ -42,29 +26,37 @@ function sketchDraw(p) {
   p.draw = function () {
     p.background(255, 102, 0);
 
-    // Draw skeleton
+    // Silhouette blobs
     if (poses && poses.length > 0) {
       let pose = poses[0];
 
-      // Draw connection lines
-      p.stroke(0, 60);
-      p.strokeWeight(1);
-      for (let [a, b] of connections) {
-        let kpA = pose.keypoints[a];
-        let kpB = pose.keypoints[b];
-        if (kpA && kpB && kpA.confidence > 0.2 && kpB.confidence > 0.2) {
-          p.line(kpA.x, kpA.y, kpB.x, kpB.y);
+      p.push();
+      p.blendMode(p.MULTIPLY);
+      p.noStroke();
+
+      // Blob size per keypoint index
+      const blobSizes = {
+        0:90, 1:70, 2:70, 3:70, 4:70, 5:70, 6:70, 7:70, 8:70, 9:70, 10:70, // head/face
+        11:110, 12:110,       // shoulders
+        13:90,  14:90,        // elbows
+        15:80,  16:80,        // wrists
+        17:60,  18:60, 19:60, 20:60, 21:60, 22:60, // hands
+        23:120, 24:120,       // hips
+        25:100, 26:100,       // knees
+        27:85,  28:85,        // ankles
+        29:60,  30:60, 31:60, 32:60  // feet
+      };
+
+      for (let i = 0; i < pose.keypoints.length; i++) {
+        let kp = pose.keypoints[i];
+        if (kp && kp.confidence > 0.15) {
+          let r = blobSizes[i] || 80;
+          p.fill(180, 60, 0, 55);
+          p.circle(kp.x, kp.y, r * 2);
         }
       }
 
-      // Draw joints
-      for (let kp of pose.keypoints) {
-        if (kp.confidence > 0.2) {
-          p.noStroke();
-          p.fill(0, 80);
-          p.circle(kp.x, kp.y, 5);
-        }
-      }
+      p.pop();
     }
 
     // Hand tracking + path drawing
