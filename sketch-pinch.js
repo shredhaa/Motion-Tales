@@ -43,7 +43,7 @@ function sketchPinch(p) {
   };
 
    p.draw = function () {
-    p.background(255, 102, 0);
+    p.background(224, 82, 255);
 
     // Draw skeleton
     if (poses && poses.length > 0) {
