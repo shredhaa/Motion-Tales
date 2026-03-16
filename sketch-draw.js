@@ -1,5 +1,5 @@
 function sketchDraw(p) {
-
+ 
   let bodyPose, video, poses, handPose;
   let hands = [];
   let path = [];
@@ -7,46 +7,45 @@ function sketchDraw(p) {
   let paragraph = "A fairy godmother transformed pumpkins and mice into a shining carriage.";
   let smoothX, smoothY;
   const SMOOTHEN = 0.07;
-
-  // BlazePose connections — pairs of keypoint indices to draw skeleton lines
+ 
   const connections = [
-    [0,1],[1,2],[2,3],[3,7],   // face
+    [0,1],[1,2],[2,3],[3,7],
     [0,4],[4,5],[5,6],[6,8],
-    [9,10],                     // mouth
-    [11,12],                    // shoulders
-    [11,13],[13,15],            // left arm
-    [12,14],[14,16],            // right arm
-    [15,17],[15,19],[17,19],    // left hand
-    [16,18],[16,20],[18,20],    // right hand
-    [11,23],[12,24],[23,24],    // torso
-    [23,25],[25,27],[27,29],[29,31],[27,31], // left leg
-    [24,26],[26,28],[28,30],[30,32],[28,32]  // right leg
+    [9,10],
+    [11,12],
+    [11,13],[13,15],
+    [12,14],[14,16],
+    [15,17],[15,19],[17,19],
+    [16,18],[16,20],[18,20],
+    [11,23],[12,24],[23,24],
+    [23,25],[25,27],[27,29],[29,31],[27,31],
+    [24,26],[26,28],[28,30],[30,32],[28,32]
   ];
-
+ 
   p.setup = function () {
     p.createCanvas(p.windowWidth, p.windowHeight);
-    video = p.createCapture(p.VIDEO);
+    // FIXED: added { flipped: true } so video matches ml5 mirroring
+    video = p.createCapture(p.VIDEO, { flipped: true });
     video.size(p.windowWidth, p.windowHeight);
     video.hide();
-
+ 
     bodyPose = ml5.bodyPose("BlazePose", { flipped: true }, () => {
       console.log("BlazePose ready");
       bodyPose.detectStart(video, r => poses = r);
     });
-
+ 
     handPose = ml5.handPose({ flipped: true }, () => {
       handPose.detectStart(video, r => hands = r);
     });
   };
-
+ 
   p.draw = function () {
     p.background(255, 102, 0);
-
+ 
     // Draw skeleton
     if (poses && poses.length > 0) {
       let pose = poses[0];
-
-      // Draw connection lines
+ 
       p.stroke(0, 20);
       p.strokeWeight(50);
       for (let [a, b] of connections) {
@@ -56,8 +55,7 @@ function sketchDraw(p) {
           p.line(kpA.x, kpA.y, kpB.x, kpB.y);
         }
       }
-
-      // Draw joints
+ 
       for (let kp of pose.keypoints) {
         if (kp.confidence > 0.2) {
           p.noStroke();
@@ -66,7 +64,7 @@ function sketchDraw(p) {
         }
       }
     }
-
+ 
     // Hand tracking + path drawing
     if (hands.length > 0) {
       let index = hands[0].keypoints[8];
@@ -83,7 +81,7 @@ function sketchDraw(p) {
       drawParagraphOnPath();
     }
   };
-
+ 
   function addPathPoint(x, y) {
     if (path.length === 0 ||
         p.dist(x, y, path[path.length-1].x, path[path.length-1].y) > spacing) {
@@ -91,7 +89,7 @@ function sketchDraw(p) {
       if (path.length > 500) path.shift();
     }
   }
-
+ 
   function drawParagraphOnPath() {
     if (path.length < 2) return;
     let cumDist = [0];
@@ -125,7 +123,7 @@ function sketchDraw(p) {
       p.pop();
     }
   }
-
+ 
   function findSegment(cumDist, target) {
     let lo = 0, hi = cumDist.length - 2;
     while (lo < hi) {
@@ -135,13 +133,17 @@ function sketchDraw(p) {
     }
     return lo;
   }
-
+ 
   p.windowResized = function () {
     p.resizeCanvas(p.windowWidth, p.windowHeight);
     if (video) video.size(p.windowWidth, p.windowHeight);
   };
-
+ 
+  // FIXED: added video.stop() so camera releases when switching sketches
   p.remove = function () {
-    if (video) video.remove();
+    if (video) {
+      video.stop();
+      video.remove();
+    }
   };
 }
